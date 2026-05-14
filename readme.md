@@ -1,159 +1,112 @@
-# CareerAI - AI-Powered Career Assistant
+# Notes Management Webpage
 
-A modern, responsive web application that provides AI-powered career guidance and professional development tools.
+A full stack notes management web application with user authentication, personal dashboards, and persistent SQL storage.
 
-## 🚀 Features
+## Features
 
-### 🤖 AI-Powered Services
-- **AI Chat Assistant** - Get instant career advice and guidance
-- **Career Assessment** - Discover your ideal career path with comprehensive questionnaire
-- **Skills Analysis** - Identify skill gaps and get personalized learning recommendations
-- **Resume Enhancement** - Get expert tips to improve your resume
-- **Market Insights** - Stay updated with job market trends and salary information
-- **Learning Resources** - Find personalized learning materials based on your style
+- **Authentication** — Signup & Login with session-based auth
+- **Password Validation** — Min 8 characters, 1 uppercase letter, 1 number (live feedback)
+- **User Dashboard** — Each user sees only their own notes
+- **CRUD Notes** — Create, Read, Update, Delete notes
+- **Search** — Real-time search by title or content
+- **Categories** — Filter notes by category (General, Work, Personal, Ideas, Todo)
+- **Persistent Storage** — Notes stored per user in SQLite database
+- **Responsive UI** — Dark theme with Inter font, navbar & footer on every page
 
-### 🔐 User Management
-- **User Authentication** - Secure signup/login system
-- **Password Validation** - Strong password requirements with real-time strength indicator
-- **Forgot Password** - Password reset functionality
-- **Chat History** - Save and manage your conversation history
+## Tech Stack
 
-### 📱 Modern UI/UX
-- **Responsive Design** - Works perfectly on desktop, tablet, and mobile
-- **Professional Interface** - Clean, modern design inspired by top job portals
-- **Interactive Animations** - Smooth transitions and hover effects
-- **Modal-based Services** - Organized service access through beautiful modals
+- **Frontend** — HTML5, CSS3 (Inter font, CSS variables), Vanilla JavaScript
+- **Backend** — Node.js, Express.js
+- **Database** — SQLite via sql.js (pure JavaScript, no native build tools needed)
+- **Auth** — bcryptjs (password hashing), express-session (session management)
 
-### 📄 Additional Pages
-- **Contact Us** - Professional contact form with validation
-- **Terms & Conditions** - Comprehensive legal documentation
-- **About Section** - Company information and feature highlights
+## Project Structure
 
-## 🛠️ Technology Stack
+```
+Notes Management Webpage/
+├── server.js              # Express server, REST API, auth routes
+├── package.json
+├── notes.db               # SQLite database (auto-created on first run)
+└── public/
+    ├── index.html         # Landing page (public)
+    ├── login.html         # Login page
+    ├── signup.html        # Signup page with live password validation
+    ├── dashboard.html     # Notes dashboard (protected, requires login)
+    ├── style.css          # Shared styles (dark theme, auth forms, layout)
+    └── app.js             # Frontend JS (CRUD, auth check, search, filter)
+```
 
-- **Backend**: FastAPI (Python)
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **AI**: Google Gemini API
-- **Styling**: Custom CSS with modern design patterns
-- **Icons**: Font Awesome
-- **Responsive**: Mobile-first design approach
+## Installation & Setup
 
-## 📦 Installation
-
-1. **Clone the repository**
 ```bash
-git clone https://github.com/ShivamKawatra/Career_assistant.git
-cd Career_assistant
+npm install
+npm start
 ```
 
-2. **Install dependencies**
-```bash
-pip install -r requirements.txt
+Open [http://localhost:3000](http://localhost:3000)
+
+## Pages
+
+| Page       | Route            | Access    |
+|------------|------------------|-----------|
+| Landing    | /                | Public    |
+| Login      | /login.html      | Public    |
+| Signup     | /signup.html     | Public    |
+| Dashboard  | /dashboard       | Auth only |
+
+Unauthenticated users are automatically redirected to `/login.html`.
+
+## API Endpoints
+
+### Auth
+| Method | Route          | Description               |
+|--------|----------------|---------------------------|
+| POST   | /api/signup    | Register new user         |
+| POST   | /api/login     | Login, starts session     |
+| POST   | /api/logout    | Destroy session           |
+| GET    | /api/me        | Get current session user  |
+
+### Notes (requires login)
+| Method | Route           | Description                          |
+|--------|-----------------|--------------------------------------|
+| GET    | /api/notes      | Get user's notes (search/filter)     |
+| GET    | /api/notes/:id  | Get single note                      |
+| POST   | /api/notes      | Create note                          |
+| PUT    | /api/notes/:id  | Update note                          |
+| DELETE | /api/notes/:id  | Delete note                          |
+| GET    | /api/categories | Get user's categories                |
+
+## Password Rules
+
+- Minimum 8 characters
+- At least 1 uppercase letter (A–Z)
+- At least 1 number (0–9)
+- Live feedback shown during signup
+
+## Database Schema
+
+```sql
+CREATE TABLE users (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  email      TEXT UNIQUE NOT NULL,
+  password   TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE notes (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    INTEGER NOT NULL,
+  title      TEXT NOT NULL,
+  content    TEXT NOT NULL,
+  category   TEXT DEFAULT 'General',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY(user_id) REFERENCES users(id)
+);
 ```
 
-3. **Set up environment variables**
-Create a `.env` file in the root directory:
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GOOGLE_API_KEY=your_google_api_key_here
-```
-
-4. **Run the application**
-```bash
-python main.py
-```
-
-5. **Open your browser**
-Navigate to `http://localhost:8000`
-
-## 🎯 Usage
-
-1. **Sign Up/Login** - Create an account or login to access all features
-2. **Choose a Service** - Click on any service card to open the modal
-3. **Get AI Guidance** - Fill out forms or chat directly with the AI
-4. **Save Your Progress** - Your chat history is automatically saved
-5. **Explore Features** - Try different services to get comprehensive career guidance
-
-## 📁 Project Structure
-
-```
-Career_assistant/
-├── main.py                 # FastAPI backend server
-├── requirements.txt        # Python dependencies
-├── .env                   # Environment variables (create this)
-├── README.md              # Project documentation
-└── static/
-    ├── index.html         # Main homepage
-    ├── contact.html       # Contact us page
-    ├── terms.html         # Terms & conditions page
-    ├── style.css          # Main stylesheet
-    └── script.js          # JavaScript functionality
-```
-
-## 🔧 API Endpoints
-
-- `POST /api/signup` - User registration
-- `POST /api/login` - User authentication
-- `POST /api/forgot-password` - Password reset
-- `POST /api/chat` - AI chat interaction
-- `POST /api/assess` - Career assessment
-- `POST /api/skills` - Skills analysis
-- `POST /api/resume` - Resume tips
-- `POST /api/market` - Market insights
-- `POST /api/learning` - Learning resources
-- `POST /api/contact` - Contact form submission
-- `GET /contact` - Contact page
-- `GET /terms` - Terms & conditions page
-
-## 🎨 Design Features
-
-- **Gradient Backgrounds** - Modern gradient hero section
-- **Glassmorphism Effects** - Transparent elements with blur effects
-- **Floating Animations** - Animated floating cards
-- **Responsive Grid** - Adaptive layouts for all screen sizes
-- **Professional Typography** - Clean, readable fonts
-- **Interactive Elements** - Hover effects and smooth transitions
-
-## 🔒 Security Features
-
-- **Input Validation** - Comprehensive form validation
-- **Password Strength** - Real-time password strength indicator
-- **Email Validation** - Proper email format checking
-- **Session Management** - Secure user session handling
-- **Error Handling** - Graceful error management
-
-## 🚀 Deployment
-
-The application is ready for deployment on platforms like:
-- **Heroku** - Add Procfile for easy deployment
-- **Railway** - Direct deployment from GitHub
-- **Vercel** - For static frontend with serverless functions
-- **AWS/GCP** - For scalable cloud deployment
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
+## Author
 
 **Shivam Kawatra**
 - GitHub: [@ShivamKawatra](https://github.com/ShivamKawatra)
-
-## 🙏 Acknowledgments
-
-- Google Gemini API for AI capabilities
-- Font Awesome for icons
-- FastAPI for the excellent web framework
-- The open-source community for inspiration
-
----
-
-⭐ **Star this repository if you found it helpful!**
