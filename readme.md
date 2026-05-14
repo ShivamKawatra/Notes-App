@@ -18,7 +18,7 @@ A full stack notes management web application with user authentication, personal
 - **Frontend** — HTML5, CSS3 (Inter font, CSS variables), Vanilla JavaScript
 - **Backend** — Node.js, Express.js
 - **Database** — SQLite via sql.js (pure JavaScript, no native build tools needed)
-- **Auth** — bcryptjs (password hashing), express-session (session management)
+- **Auth** — bcryptjs (password hashing), cookie-session (session management)
 
 ## Project Structure
 
@@ -26,6 +26,7 @@ A full stack notes management web application with user authentication, personal
 Notes Management Webpage/
 ├── server.js              # Express server, REST API, auth routes
 ├── package.json
+├── vercel.json            # Vercel deployment config
 ├── notes.db               # SQLite database (auto-created on first run)
 └── public/
     ├── index.html         # Landing page (public)
@@ -44,6 +45,11 @@ npm start
 ```
 
 Open [http://localhost:3000](http://localhost:3000)
+
+## Deployment (Vercel)
+
+- Add `VERCEL=true` in Vercel Environment Variables
+- Push to GitHub — Vercel auto-deploys via `vercel.json`
 
 ## Pages
 
@@ -67,20 +73,20 @@ Unauthenticated users are automatically redirected to `/login.html`.
 | GET    | /api/me        | Get current session user  |
 
 ### Notes (requires login)
-| Method | Route           | Description                          |
-|--------|-----------------|--------------------------------------|
-| GET    | /api/notes      | Get user's notes (search/filter)     |
-| GET    | /api/notes/:id  | Get single note                      |
-| POST   | /api/notes      | Create note                          |
-| PUT    | /api/notes/:id  | Update note                          |
-| DELETE | /api/notes/:id  | Delete note                          |
-| GET    | /api/categories | Get user's categories                |
+| Method | Route           | Description                      |
+|--------|-----------------|----------------------------------|
+| GET    | /api/notes      | Get user's notes (search/filter) |
+| GET    | /api/notes/:id  | Get single note                  |
+| POST   | /api/notes      | Create note                      |
+| PUT    | /api/notes/:id  | Update note                      |
+| DELETE | /api/notes/:id  | Delete note                      |
+| GET    | /api/categories | Get user's categories            |
 
 ## Password Rules
 
 - Minimum 8 characters
-- At least 1 uppercase letter (A–Z)
-- At least 1 number (0–9)
+- At least 1 uppercase letter (A-Z)
+- At least 1 number (0-9)
 - Live feedback shown during signup
 
 ## Database Schema
