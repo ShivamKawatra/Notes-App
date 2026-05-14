@@ -4,19 +4,20 @@ const path = require('path');
 const fs = require('fs');
 const initSqlJs = require('sql.js');
 const bcrypt = require('bcryptjs');
-const session = require('express-session');
+const session = require('cookie-session');
 
 const app = express();
-const DB_FILE = path.join(__dirname, 'notes.db');
+const DB_FILE = process.env.VERCEL ? '/tmp/notes.db' : path.join(__dirname, 'notes.db');
 let db;
 
 app.use(cors());
 app.use(express.json());
 app.use(session({
+  name: 'notesapp',
   secret: 'notesapp_secret_key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  secure: process.env.VERCEL ? true : false,
+  httpOnly: true
 }));
 // Serve dashboard only when logged in
 app.get('/dashboard', (req, res) => {
@@ -186,4 +187,11 @@ app.get('/api/categories', auth, (req, res) => {
   res.json(rows.map(r => r.category));
 });
 
-initDB().then(() => app.listen(3000, () => console.log('Server running at http://localhost:3000')));
+initDB().then(() => {
+  if (!process.env.VERCEL) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+  }
+});
+
+module.exports = app;
