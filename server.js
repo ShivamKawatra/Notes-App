@@ -114,9 +114,26 @@ app.get('/api/me', async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select('-password');
     if (!user) return res.status(401).json({ error: 'Not logged in' });
-    res.json({ id: user._id, name: user.name, email: user.email });
+    res.json({ id: user._id, name: user.name, email: user.email, created_at: user.created_at });
   } catch (e) {
     res.status(401).json({ error: 'Not logged in' });
+  }
+});
+
+app.get('/api/me/stats', auth, async (req, res) => {
+  try {
+    const total = await Note.countDocuments({ userId: req.session.userId });
+    const cats  = await Note.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(req.session.userId) } },
+      { $group: { _id: '$category', c: { $sum: 1 } } },
+      { $sort: { c: -1 } },
+      { $project: { category: '$_id', c: 1, _id: 0 } }
+    ]);
+    const recent = await Note.find({ userId: req.session.userId })
+      .sort({ updated_at: -1 }).limit(5).select('title updated_at');
+    res.json({ total, categories: cats, recent });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 });
 

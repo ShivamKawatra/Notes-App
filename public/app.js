@@ -72,7 +72,7 @@ function renderList() {
 
   notes.forEach(n => {
     const card = document.createElement('div');
-    card.className = `note-card${n.id === activeId ? ' active' : ''}`;
+    card.className = `note-card${n._id === activeId ? ' active' : ''}`;
     card.innerHTML = `
       <div class="note-card-title">${escHtml(n.title)}</div>
       <div class="note-card-preview">${escHtml(n.content)}</div>
@@ -80,7 +80,7 @@ function renderList() {
         <span class="badge">${escHtml(n.category)}</span>
         <span class="note-date">${fmtDate(n.updated_at)}</span>
       </div>`;
-    card.addEventListener('click', () => viewNote(n.id));
+    card.addEventListener('click', () => viewNote(n._id));
     notesList.appendChild(card);
   });
 }
@@ -171,7 +171,7 @@ async function saveNote() {
   });
   if (!res.ok) { toast((await res.json()).error, 'error'); return; }
   const saved = await res.json();
-  activeId = saved.id;
+  activeId = saved._id;
   toast(isNew ? 'Note created!' : 'Note updated!');
   await loadNotes();
   viewNote(activeId);
