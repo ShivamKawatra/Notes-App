@@ -115,7 +115,8 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session.destroy(() => res.json({ message: 'Logged out' }));
+  req.session = null;
+  res.json({ message: 'Logged out' });
 });
 
 app.get('/api/me', (req, res) => {
