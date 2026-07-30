@@ -34,7 +34,7 @@ const Note = mongoose.model('Note', noteSchema);
 
 // ── Middleware ───────────────────────────────────
 app.set('trust proxy', 1);
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(session({
   name: 'notesapp',
