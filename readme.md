@@ -1,6 +1,6 @@
-# Notes Management Webpage
+# Notes App
 
-A full stack notes management web application with user authentication, personal dashboards, and persistent MongoDB storage via Mongoose.
+A Full Stack Notes Management Web Application with user authentication, personal dashboards, and persistent MongoDB storage via Mongoose.
 
 ## Features
 
