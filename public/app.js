@@ -23,6 +23,7 @@ async function checkAuth() {
   if (!res.ok) { window.location.replace('/login.html'); return false; }
   const user = await res.json();
   $('navUser').textContent = `👤 ${user.name}`;
+  $('navUser').title = 'View Profile';
   $('userGreeting').textContent = `Hello, ${user.name.split(' ')[0]} 👋`;
   return true;
 }
@@ -209,13 +210,11 @@ function debounce(fn, ms) {
 // ── Events ───────────────────────────────────────
 $('newNoteBtn').addEventListener('click', newNote);
 $('navNewNote').addEventListener('click', e => { e.preventDefault(); newNote(); });
-
 $('logoutBtn').addEventListener('click', logout);
 $('saveBtn').addEventListener('click', saveNote);
 $('deleteBtn').addEventListener('click', deleteNote);
 $('cancelBtn').addEventListener('click', cancelEdit);
 $('editBtn').addEventListener('click', editNote);
-if ($('profileBtn')) $('profileBtn').addEventListener('click', () => window.location.href = '/profile.html');
 searchInput.addEventListener('input', debounce(loadNotes, 300));
 catFilter.addEventListener('change', loadNotes);
 

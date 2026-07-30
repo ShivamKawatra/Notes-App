@@ -83,6 +83,17 @@ body {
   padding: 0 8px;
 }
 
+.nav-user-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent) !important;
+  padding: 6px 13px;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: all 0.18s;
+}
+.nav-user-link:hover { background: var(--surface2); color: var(--text-1) !important; }
+
 .nav-logout {
   color: #f87171;
   font-weight: 500;

@@ -80,7 +80,7 @@
       if (!user) return;
       const nav = document.getElementById('navLinks');
       nav.innerHTML = `
-        <span class="nav-user">👤 ${user.name}</span>
+        <a href="/profile.html" class="nav-link nav-user-link">👤 ${user.name}</a>
         <a href="/dashboard" class="nav-link nav-cta">📝 My Notes</a>
       `;
       // Also update hero buttons
