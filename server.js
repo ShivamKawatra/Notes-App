@@ -33,6 +33,7 @@ const User = mongoose.model('User', userSchema);
 const Note = mongoose.model('Note', noteSchema);
 
 // ── Middleware ───────────────────────────────────
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 app.use(session({
@@ -41,7 +42,7 @@ app.use(session({
   maxAge: 7 * 24 * 60 * 60 * 1000,
   secure: !!process.env.VERCEL,
   httpOnly: true,
-  sameSite: 'lax'
+  sameSite: 'none'
 }));
 
 // ── Page Routes ──────────────────────────────────
