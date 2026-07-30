@@ -65,8 +65,8 @@
 
   <!-- Footer -->
   <footer class="footer">
-    <span>© 2025 NotesApp — Built with Node.js, Express &amp; SQLite</span>
-    <div class="footer-links">
+    <span>© 2026 NotesApp — Built with Node.js, Express &amp; MongoDB</span>
+    <div class="footer-links" id="footerLinks">
       <a href="/login.html" class="footer-home">🔑 Login</a>
       <a href="/signup.html" class="footer-home">✨ Sign Up</a>
     </div>
@@ -83,7 +83,6 @@
     }).then(user => {
       const nav = document.getElementById('navLinks');
       if (user) {
-        // Logged in: show user link, my notes, logout — hide login/signup
         nav.innerHTML = `
           <a href="/profile.html" class="nav-link nav-user-link">👤 ${user.name}</a>
           <a href="/dashboard" class="nav-link nav-cta">📝 My Notes</a>
@@ -92,6 +91,7 @@
         document.querySelector('.hero-actions').innerHTML = `
           <a href="/dashboard" class="btn-hero-primary">Open My Notes →</a>
         `;
+        document.getElementById('footerLinks').style.display = 'none';
       }
       // Not logged in: default login/signup links already in HTML, nothing to change
     });
