@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
-const session = require('cookie-session');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
 
 const app = express();
@@ -40,10 +41,15 @@ app.use(express.json());
 app.use(session({
   name: 'notesapp',
   secret: process.env.SESSION_SECRET || 'notesapp_secret_key_2025',
-  maxAge: 7 * 24 * 60 * 60 * 1000,
-  secure: IS_VERCEL,
-  httpOnly: true,
-  sameSite: IS_VERCEL ? 'none' : 'lax'
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: MONGO_URI, ttl: 7 * 24 * 60 * 60 }),
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: IS_VERCEL,
+    httpOnly: true,
+    sameSite: IS_VERCEL ? 'none' : 'lax'
+  }
 }));
 
 // ── Page Routes ──────────────────────────────────
@@ -107,8 +113,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/logout', (req, res) => {
-  req.session = null;
-  res.json({ message: 'Logged out' });
+  req.session.destroy(() => res.json({ message: 'Logged out' }));
 });
 
 app.get('/api/me', async (req, res) => {
