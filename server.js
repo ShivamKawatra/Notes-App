@@ -33,6 +33,7 @@ const User = mongoose.model('User', userSchema);
 const Note = mongoose.model('Note', noteSchema);
 
 // ── Middleware ───────────────────────────────────
+const IS_VERCEL = !!process.env.VERCEL;
 app.set('trust proxy', 1);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
@@ -40,9 +41,9 @@ app.use(session({
   name: 'notesapp',
   secret: process.env.SESSION_SECRET || 'notesapp_secret_key_2025',
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  secure: !!process.env.VERCEL,
+  secure: IS_VERCEL,
   httpOnly: true,
-  sameSite: 'none'
+  sameSite: IS_VERCEL ? 'none' : 'lax'
 }));
 
 // ── Page Routes ──────────────────────────────────
