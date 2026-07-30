@@ -1,6 +1,6 @@
 # Notes Management Webpage
 
-A full stack notes management web application with user authentication, personal dashboards, and persistent SQL storage.
+A full stack notes management web application with user authentication, personal dashboards, and persistent MongoDB storage via Mongoose.
 
 ## Features
 
@@ -8,39 +8,50 @@ A full stack notes management web application with user authentication, personal
 - **Password Validation** — Min 8 characters, 1 uppercase letter, 1 number (live feedback)
 - **User Dashboard** — Each user sees only their own notes
 - **CRUD Notes** — Create, Read, Update, Delete notes
-- **Search** — Real-time search by title or content
+- **Search** — Real-time full-text search by title or content
 - **Categories** — Filter notes by category (General, Work, Personal, Ideas, Todo)
-- **Persistent Storage** — Notes stored per user in SQLite database
+- **Persistent Storage** — Notes and users stored in MongoDB via Mongoose
+- **Profile Page** — Shows user info, total notes, category breakdown, recent activity
 - **Responsive UI** — Dark theme with Inter font, navbar & footer on every page
 
 ## Tech Stack
 
 - **Frontend** — HTML5, CSS3 (Inter font, CSS variables), Vanilla JavaScript
 - **Backend** — Node.js, Express.js
-- **Database** — SQLite via sql.js (pure JavaScript, no native build tools needed)
+- **Database** — MongoDB with Mongoose ODM
 - **Auth** — bcryptjs (password hashing), cookie-session (session management)
 
 ## Project Structure
 
 ```
 Notes Management Webpage/
-├── server.js              # Express server, REST API, auth routes
+├── server.js              # Express server, REST API, Mongoose models
 ├── package.json
 ├── vercel.json            # Vercel deployment config
-├── notes.db               # SQLite database (auto-created on first run)
+├── .env.example           # Environment variable reference
 └── public/
     ├── index.html         # Landing page (public)
     ├── login.html         # Login page
     ├── signup.html        # Signup page with live password validation
-    ├── dashboard.html     # Notes dashboard (protected, requires login)
-    ├── style.css          # Shared styles (dark theme, auth forms, layout)
-    └── app.js             # Frontend JS (CRUD, auth check, search, filter)
+    ├── dashboard.html     # Notes dashboard (protected)
+    ├── profile.html       # User profile & stats (protected)
+    ├── style.css          # Shared styles
+    └── app.js             # Frontend JS (CRUD, auth, search, filter)
 ```
 
 ## Installation & Setup
 
 ```bash
 npm install
+```
+
+Create a `.env` file:
+```env
+MONGO_URI=mongodb://localhost:27017/notes
+SESSION_SECRET=your_secret_key_here
+```
+
+```bash
 npm start
 ```
 
@@ -48,29 +59,31 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Deployment (Vercel)
 
-- Add `VERCEL=true` in Vercel Environment Variables
-- Push to GitHub — Vercel auto-deploys via `vercel.json`
+Add these in Vercel → Settings → Environment Variables:
+- `MONGO_URI` — MongoDB Atlas connection string
+- `SESSION_SECRET` — any random secret string
+- `VERCEL` — `true`
 
 ## Pages
 
-| Page       | Route            | Access    |
-|------------|------------------|-----------|
-| Landing    | /                | Public    |
-| Login      | /login.html      | Public    |
-| Signup     | /signup.html     | Public    |
-| Dashboard  | /dashboard       | Auth only |
-
-Unauthenticated users are automatically redirected to `/login.html`.
+| Page      | Route         | Access    |
+|-----------|---------------|-----------|
+| Landing   | /             | Public    |
+| Login     | /login.html   | Public    |
+| Signup    | /signup.html  | Public    |
+| Dashboard | /dashboard    | Auth only |
+| Profile   | /profile.html | Auth only |
 
 ## API Endpoints
 
 ### Auth
-| Method | Route          | Description               |
-|--------|----------------|---------------------------|
-| POST   | /api/signup    | Register new user         |
-| POST   | /api/login     | Login, starts session     |
-| POST   | /api/logout    | Destroy session           |
-| GET    | /api/me        | Get current session user  |
+| Method | Route          | Description              |
+|--------|----------------|--------------------------|
+| POST   | /api/signup    | Register new user        |
+| POST   | /api/login     | Login, starts session    |
+| POST   | /api/logout    | Clear session            |
+| GET    | /api/me        | Get current user info    |
+| GET    | /api/me/stats  | Get notes stats for user |
 
 ### Notes (requires login)
 | Method | Route           | Description                      |
@@ -80,7 +93,7 @@ Unauthenticated users are automatically redirected to `/login.html`.
 | POST   | /api/notes      | Create note                      |
 | PUT    | /api/notes/:id  | Update note                      |
 | DELETE | /api/notes/:id  | Delete note                      |
-| GET    | /api/categories | Get user's categories            |
+| GET    | /api/categories | Get user's distinct categories   |
 
 ## Password Rules
 
@@ -89,27 +102,26 @@ Unauthenticated users are automatically redirected to `/login.html`.
 - At least 1 number (0-9)
 - Live feedback shown during signup
 
-## Database Schema
+## MongoDB Schema
 
-```sql
-CREATE TABLE users (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  name       TEXT NOT NULL,
-  email      TEXT UNIQUE NOT NULL,
-  password   TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now'))
-);
+```js
+// User
+{
+  name:       String (required),
+  email:      String (required, unique),
+  password:   String (required, bcrypt hashed),
+  created_at: Date
+}
 
-CREATE TABLE notes (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL,
-  title      TEXT NOT NULL,
-  content    TEXT NOT NULL,
-  category   TEXT DEFAULT 'General',
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY(user_id) REFERENCES users(id)
-);
+// Note
+{
+  userId:     ObjectId (ref: User, required),
+  title:      String (required),
+  content:    String (required),
+  category:   String (default: 'General'),
+  created_at: Date (auto),
+  updated_at: Date (auto)
+}
 ```
 
 ## Author
