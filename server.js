@@ -1,25 +1,39 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
-const initSqlJs = require('sql.js');
 const bcrypt = require('bcryptjs');
 const session = require('cookie-session');
+const Datastore = require('nedb-promises');
 
 const app = express();
-const DB_FILE = process.env.VERCEL ? '/tmp/notes.db' : path.join(__dirname, 'notes.db');
-let db;
+const DB_DIR = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'data');
+
+// Ensure data dir exists locally
+if (!process.env.VERCEL) {
+  const fs = require('fs');
+  if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
+}
+
+const usersDB = Datastore.create({ filename: path.join(DB_DIR, 'users.db'), autoload: true });
+const notesDB = Datastore.create({ filename: path.join(DB_DIR, 'notes.db'), autoload: true });
+
+// Ensure unique index on email
+usersDB.ensureIndex({ fieldName: 'email', unique: true });
 
 app.use(cors());
 app.use(express.json());
 app.use(session({
   name: 'notesapp',
-  secret: 'notesapp_secret_key',
+  secret: 'notesapp_secret_key_2025',
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  secure: process.env.VERCEL ? true : false,
-  httpOnly: true
+  secure: !!process.env.VERCEL,
+  httpOnly: true,
+  sameSite: 'lax'
 }));
-// Serve dashboard only when logged in
+
+// ── Static & Page Routes ─────────────────────────
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
 app.get('/dashboard', (req, res) => {
   if (!req.session.userId) return res.redirect('/login.html');
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -30,88 +44,55 @@ app.get('/profile.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-// Root → landing page (always public)
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
 app.use(express.static(path.join(__dirname, 'public')));
 
-async function initDB() {
-  const SQL = await initSqlJs();
-  db = fs.existsSync(DB_FILE)
-    ? new SQL.Database(fs.readFileSync(DB_FILE))
-    : new SQL.Database();
-
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  )`);
-
-  db.run(`CREATE TABLE IF NOT EXISTS notes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    content TEXT NOT NULL,
-    category TEXT DEFAULT 'General',
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now')),
-    FOREIGN KEY(user_id) REFERENCES users(id)
-  )`);
-  save();
-}
-
-function save() { fs.writeFileSync(DB_FILE, Buffer.from(db.export())); }
-
-function all(q, p = []) {
-  const s = db.prepare(q); s.bind(p);
-  const rows = [];
-  while (s.step()) rows.push(s.getAsObject());
-  s.free(); return rows;
-}
-function get(q, p = []) { return all(q, p)[0] || null; }
-function run(q, p = []) { db.run(q, p); save(); }
-
+// ── Auth Middleware ──────────────────────────────
 function auth(req, res, next) {
   if (!req.session.userId) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
 
-// ── Auth Routes ──────────────────────────────────────────────
-
+// ── Auth Routes ──────────────────────────────────
 app.post('/api/signup', async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name?.trim() || !email?.trim() || !password)
-    return res.status(400).json({ error: 'All fields are required' });
+  try {
+    const { name, email, password } = req.body;
+    if (!name?.trim() || !email?.trim() || !password)
+      return res.status(400).json({ error: 'All fields are required' });
 
-  if (get('SELECT id FROM users WHERE email = ?', [email.trim()]))
-    return res.status(409).json({ error: 'Email already registered' });
+    const hash = await bcrypt.hash(password, 10);
+    const user = await usersDB.insert({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: hash,
+      created_at: new Date().toISOString()
+    });
 
-  const hash = await bcrypt.hash(password, 10);
-  run('INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-    [name.trim(), email.trim().toLowerCase(), hash]);
-
-  const user = get('SELECT id, name, email FROM users WHERE email = ?', [email.trim().toLowerCase()]);
-  req.session.userId = user.id;
-  req.session.userName = user.name;
-  res.status(201).json({ id: user.id, name: user.name, email: user.email });
+    req.session.userId = user._id;
+    req.session.userName = user.name;
+    res.status(201).json({ id: user._id, name: user.name, email: user.email });
+  } catch (e) {
+    if (e.errorType === 'uniqueViolated')
+      return res.status(409).json({ error: 'Email already registered' });
+    res.status(500).json({ error: 'Signup failed' });
+  }
 });
 
 app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email?.trim() || !password)
-    return res.status(400).json({ error: 'Email and password are required' });
+  try {
+    const { email, password } = req.body;
+    if (!email?.trim() || !password)
+      return res.status(400).json({ error: 'Email and password are required' });
 
-  const user = get('SELECT * FROM users WHERE email = ?', [email.trim().toLowerCase()]);
-  if (!user || !(await bcrypt.compare(password, user.password)))
-    return res.status(401).json({ error: 'Invalid email or password' });
+    const user = await usersDB.findOne({ email: email.trim().toLowerCase() });
+    if (!user || !(await bcrypt.compare(password, user.password)))
+      return res.status(401).json({ error: 'Invalid email or password' });
 
-  req.session.userId = user.id;
-  req.session.userName = user.name;
-  res.json({ id: user.id, name: user.name, email: user.email });
+    req.session.userId = user._id;
+    req.session.userName = user.name;
+    res.json({ id: user._id, name: user.name, email: user.email });
+  } catch (e) {
+    res.status(500).json({ error: 'Login failed' });
+  }
 });
 
 app.post('/api/logout', (req, res) => {
@@ -119,80 +100,106 @@ app.post('/api/logout', (req, res) => {
   res.json({ message: 'Logged out' });
 });
 
-app.get('/api/me', (req, res) => {
+app.get('/api/me', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in' });
-  const user = get('SELECT id, name, email, created_at FROM users WHERE id = ?', [req.session.userId]);
-  res.json({ ...user, name: req.session.userName });
+  const user = await usersDB.findOne({ _id: req.session.userId });
+  if (!user) return res.status(401).json({ error: 'Not logged in' });
+  res.json({ id: user._id, name: user.name, email: user.email });
 });
 
-app.get('/api/me/stats', auth, (req, res) => {
-  const total = get('SELECT COUNT(*) as c FROM notes WHERE user_id = ?', [req.session.userId])?.c || 0;
-  const cats  = all('SELECT category, COUNT(*) as c FROM notes WHERE user_id = ? GROUP BY category ORDER BY c DESC', [req.session.userId]);
-  const recent = all('SELECT title, updated_at FROM notes WHERE user_id = ? ORDER BY updated_at DESC LIMIT 5', [req.session.userId]);
-  res.json({ total, categories: cats, recent });
+// ── Notes Routes ─────────────────────────────────
+app.get('/api/notes', auth, async (req, res) => {
+  try {
+    const { search, category } = req.query;
+    let query = { userId: req.session.userId };
+
+    if (category && category !== 'All') query.category = category;
+
+    let notes = await notesDB.find(query).sort({ updated_at: -1 });
+
+    if (search) {
+      const s = search.toLowerCase();
+      notes = notes.filter(n =>
+        n.title.toLowerCase().includes(s) || n.content.toLowerCase().includes(s)
+      );
+    }
+    res.json(notes);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch notes' });
+  }
 });
 
-// ── Notes Routes (auth protected) ────────────────────────────
-
-app.get('/api/notes', auth, (req, res) => {
-  const { search, category } = req.query;
-  let q = 'SELECT * FROM notes WHERE user_id = ?';
-  const p = [req.session.userId];
-
-  if (search) { q += ' AND (title LIKE ? OR content LIKE ?)'; p.push(`%${search}%`, `%${search}%`); }
-  if (category && category !== 'All') { q += ' AND category = ?'; p.push(category); }
-  q += ' ORDER BY updated_at DESC';
-  res.json(all(q, p));
-});
-
-app.get('/api/notes/:id', auth, (req, res) => {
-  const note = get('SELECT * FROM notes WHERE id = ? AND user_id = ?', [req.params.id, req.session.userId]);
+app.get('/api/notes/:id', auth, async (req, res) => {
+  const note = await notesDB.findOne({ _id: req.params.id, userId: req.session.userId });
   if (!note) return res.status(404).json({ error: 'Note not found' });
   res.json(note);
 });
 
-app.post('/api/notes', auth, (req, res) => {
-  const { title, content, category } = req.body;
-  if (!title?.trim() || !content?.trim())
-    return res.status(400).json({ error: 'Title and content are required' });
+app.post('/api/notes', auth, async (req, res) => {
+  try {
+    const { title, content, category } = req.body;
+    if (!title?.trim() || !content?.trim())
+      return res.status(400).json({ error: 'Title and content are required' });
 
-  run('INSERT INTO notes (user_id, title, content, category) VALUES (?, ?, ?, ?)',
-    [req.session.userId, title.trim(), content.trim(), category?.trim() || 'General']);
-
-  res.status(201).json(get('SELECT * FROM notes WHERE id = (SELECT MAX(id) FROM notes WHERE user_id = ?)', [req.session.userId]));
-});
-
-app.put('/api/notes/:id', auth, (req, res) => {
-  const { title, content, category } = req.body;
-  if (!title?.trim() || !content?.trim())
-    return res.status(400).json({ error: 'Title and content are required' });
-
-  const existing = get('SELECT id FROM notes WHERE id = ? AND user_id = ?', [req.params.id, req.session.userId]);
-  if (!existing) return res.status(404).json({ error: 'Note not found' });
-
-  run(`UPDATE notes SET title=?, content=?, category=?, updated_at=datetime('now') WHERE id=? AND user_id=?`,
-    [title.trim(), content.trim(), category?.trim() || 'General', req.params.id, req.session.userId]);
-
-  res.json(get('SELECT * FROM notes WHERE id = ?', [req.params.id]));
-});
-
-app.delete('/api/notes/:id', auth, (req, res) => {
-  const existing = get('SELECT id FROM notes WHERE id = ? AND user_id = ?', [req.params.id, req.session.userId]);
-  if (!existing) return res.status(404).json({ error: 'Note not found' });
-  run('DELETE FROM notes WHERE id = ? AND user_id = ?', [req.params.id, req.session.userId]);
-  res.json({ message: 'Note deleted' });
-});
-
-app.get('/api/categories', auth, (req, res) => {
-  const rows = all('SELECT DISTINCT category FROM notes WHERE user_id = ? ORDER BY category', [req.session.userId]);
-  res.json(rows.map(r => r.category));
-});
-
-initDB().then(() => {
-  if (!process.env.VERCEL) {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+    const now = new Date().toISOString();
+    const note = await notesDB.insert({
+      userId: req.session.userId,
+      title: title.trim(),
+      content: content.trim(),
+      category: category?.trim() || 'General',
+      created_at: now,
+      updated_at: now
+    });
+    res.status(201).json(note);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to create note' });
   }
 });
+
+app.put('/api/notes/:id', auth, async (req, res) => {
+  try {
+    const { title, content, category } = req.body;
+    if (!title?.trim() || !content?.trim())
+      return res.status(400).json({ error: 'Title and content are required' });
+
+    const existing = await notesDB.findOne({ _id: req.params.id, userId: req.session.userId });
+    if (!existing) return res.status(404).json({ error: 'Note not found' });
+
+    await notesDB.update(
+      { _id: req.params.id, userId: req.session.userId },
+      { $set: { title: title.trim(), content: content.trim(), category: category?.trim() || 'General', updated_at: new Date().toISOString() } }
+    );
+    res.json(await notesDB.findOne({ _id: req.params.id }));
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update note' });
+  }
+});
+
+app.delete('/api/notes/:id', auth, async (req, res) => {
+  try {
+    const existing = await notesDB.findOne({ _id: req.params.id, userId: req.session.userId });
+    if (!existing) return res.status(404).json({ error: 'Note not found' });
+    await notesDB.remove({ _id: req.params.id, userId: req.session.userId });
+    res.json({ message: 'Note deleted' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
+app.get('/api/categories', auth, async (req, res) => {
+  try {
+    const notes = await notesDB.find({ userId: req.session.userId });
+    const cats = [...new Set(notes.map(n => n.category))].sort();
+    res.json(cats);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+});
+
+// ── Start ────────────────────────────────────────
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+}
 
 module.exports = app;
