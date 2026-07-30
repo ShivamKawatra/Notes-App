@@ -73,20 +73,27 @@
   </footer>
 
   <script>
-    // If already logged in, swap navbar to show dashboard link
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.reload();
+    }
+
     fetch('/api/me').then(r => {
       if (r.ok) return r.json();
     }).then(user => {
-      if (!user) return;
       const nav = document.getElementById('navLinks');
-      nav.innerHTML = `
-        <a href="/profile.html" class="nav-link nav-user-link">👤 ${user.name}</a>
-        <a href="/dashboard" class="nav-link nav-cta">📝 My Notes</a>
-      `;
-      // Also update hero buttons
-      document.querySelector('.hero-actions').innerHTML = `
-        <a href="/dashboard" class="btn-hero-primary">Open My Notes →</a>
-      `;
+      if (user) {
+        // Logged in: show user link, my notes, logout — hide login/signup
+        nav.innerHTML = `
+          <a href="/profile.html" class="nav-link nav-user-link">👤 ${user.name}</a>
+          <a href="/dashboard" class="nav-link nav-cta">📝 My Notes</a>
+          <button class="nav-link nav-logout" onclick="logout()">🚪 Logout</button>
+        `;
+        document.querySelector('.hero-actions').innerHTML = `
+          <a href="/dashboard" class="btn-hero-primary">Open My Notes →</a>
+        `;
+      }
+      // Not logged in: default login/signup links already in HTML, nothing to change
     });
   </script>
 </body>
