@@ -29,7 +29,7 @@ async function checkAuth() {
 }
 
 async function logout() {
-  await fetch('/api/logout', { method: 'POST' });
+  await fetch('/api/logout', { method: 'POST', credentials: 'include' });
   window.location.replace('/');
 }
 
