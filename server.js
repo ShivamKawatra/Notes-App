@@ -5,6 +5,15 @@ const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
 const mongoose = require('mongoose');
+const multer = require('multer');
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_, file, cb) => {
+    cb(null, /^image\/(png|jpeg)$/.test(file.mimetype));
+  }
+});
 
 const app = express();
 
@@ -20,6 +29,7 @@ const userSchema = new mongoose.Schema({
   name:       { type: String, required: true, trim: true },
   email:      { type: String, required: true, unique: true, lowercase: true, trim: true },
   password:   { type: String, required: true },
+  avatar:     { type: String, default: null },
   created_at: { type: Date, default: Date.now }
 });
 
@@ -63,6 +73,11 @@ app.get('/dashboard', (req, res) => {
 app.get('/profile.html', (req, res) => {
   if (!req.session.userId) return res.redirect('/login.html');
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
+app.get('/settings.html', (req, res) => {
+  if (!req.session.userId) return res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, 'public', 'settings.html'));
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -121,9 +136,44 @@ app.get('/api/me', async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select('-password');
     if (!user) return res.status(401).json({ error: 'Not logged in' });
-    res.json({ id: user._id, name: user.name, email: user.email, created_at: user.created_at });
+    res.json({ id: user._id, name: user.name, email: user.email, avatar: user.avatar, created_at: user.created_at });
   } catch (e) {
     res.status(401).json({ error: 'Not logged in' });
+  }
+});
+
+app.put('/api/me/name', auth, async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'Name is required' });
+  const user = await User.findByIdAndUpdate(req.session.userId, { name: name.trim() }, { new: true });
+  req.session.userName = user.name;
+  res.json({ name: user.name });
+});
+
+app.put('/api/me/password', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both fields are required' });
+    if (newPassword.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    const user = await User.findById(req.session.userId);
+    if (!(await bcrypt.compare(currentPassword, user.password)))
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password updated' });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update password' });
+  }
+});
+
+app.post('/api/me/avatar', auth, upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Invalid file. Use PNG or JPG under 2MB' });
+    const b64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    await User.findByIdAndUpdate(req.session.userId, { avatar: b64 });
+    res.json({ avatar: b64 });
+  } catch (e) {
+    res.status(500).json({ error: 'Upload failed' });
   }
 });
 

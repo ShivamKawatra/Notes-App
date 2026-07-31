@@ -4,6 +4,7 @@ let notes = [], activeId = null;
 const $ = id => document.getElementById(id);
 
 const notesList    = $('notesList');
+const editorPanel  = $('editorPanel');
 const emptyState   = $('emptyState');
 const searchInput  = $('searchInput');
 const catFilter    = $('categoryFilter');
@@ -16,6 +17,13 @@ const noteContent  = $('noteContent');
 const noteCategory = $('noteCategory');
 const titleError   = $('titleError');
 const contentError = $('contentError');
+const isMobile = () => window.innerWidth <= 768;
+function showEditor() {
+  if (isMobile()) { notesList.classList.add('hidden'); editorPanel.classList.remove('hidden'); }
+}
+function showList() {
+  if (isMobile()) { editorPanel.classList.add('hidden'); notesList.classList.remove('hidden'); }
+}
 
 // ── Auth check ───────────────────────────────────
 async function checkAuth() {
@@ -114,9 +122,11 @@ async function viewNote(id) {
   $('viewCategory').textContent = note.category;
   $('viewDate').textContent = fmtDate(note.updated_at);
   $('saveBtn').style.display = 'none';
+  $('editBtn').style.display = '';
   $('deleteBtn').style.display = '';
-  $('cancelBtn').style.display = '';
+  $('backBtn').style.display = '';
   renderList();
+  showEditor();
 }
 
 // ── New note ─────────────────────────────────────
@@ -129,9 +139,11 @@ function newNote() {
   noteTitle.value = ''; noteContent.value = ''; noteCategory.value = 'General';
   titleError.textContent = ''; contentError.textContent = '';
   $('saveBtn').style.display = '';
+  $('editBtn').style.display = 'none';
   $('deleteBtn').style.display = 'none';
-  $('cancelBtn').style.display = '';
+  $('backBtn').style.display = '';
   noteTitle.focus();
+  showEditor();
 }
 
 // ── Edit note ────────────────────────────────────
@@ -146,8 +158,9 @@ async function editNote() {
   noteCategory.value = note.category;
   titleError.textContent = ''; contentError.textContent = '';
   $('saveBtn').style.display = '';
+  $('editBtn').style.display = 'none';
   $('deleteBtn').style.display = '';
-  $('cancelBtn').style.display = '';
+  $('backBtn').style.display = '';
   noteTitle.focus();
 }
 
@@ -175,7 +188,7 @@ async function saveNote() {
   activeId = saved._id;
   toast(isNew ? 'Note created!' : 'Note updated!');
   await loadNotes();
-  viewNote(activeId);
+  await viewNote(activeId);
 }
 
 // ── Delete note ──────────────────────────────────
@@ -188,9 +201,8 @@ async function deleteNote() {
   resetEditor();
   await loadNotes();
   toast('Note deleted!');
+  showList();
 }
-
-function cancelEdit() { activeId ? viewNote(activeId) : resetEditor(); }
 
 function resetEditor() {
   editorTitle.textContent = 'Select or create a note';
@@ -213,8 +225,8 @@ $('navNewNote').addEventListener('click', e => { e.preventDefault(); newNote(); 
 $('logoutBtn').addEventListener('click', logout);
 $('saveBtn').addEventListener('click', saveNote);
 $('deleteBtn').addEventListener('click', deleteNote);
-$('cancelBtn').addEventListener('click', cancelEdit);
 $('editBtn').addEventListener('click', editNote);
+$('backBtn').addEventListener('click', () => { resetEditor(); showList(); });
 searchInput.addEventListener('input', debounce(loadNotes, 300));
 catFilter.addEventListener('change', loadNotes);
 

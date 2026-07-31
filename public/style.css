@@ -608,10 +608,59 @@ body.auth-body {
 .auth-switch a:hover { color: var(--text-1); }
 
 /* ── Responsive ─────────────────────────────────── */
-@media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; }
-  .notes-list { display: none; }
-  .sidebar { flex-direction: row; flex-wrap: wrap; height: auto; overflow: auto; }
+.mobile-only { display: none; }
+
+@media (max-width: 768px) {
+  .mobile-only { display: inline-flex; }
+
+  body { overflow: auto; height: auto; min-height: 100vh; }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-header { flex-direction: row; align-items: center; gap: 8px; width: 100%; }
+  .user-greeting { flex: 1; }
+  .search-box { flex: 1; min-width: 140px; }
+  .category-filter { min-width: 120px; }
+  .category-filter label { display: none; }
+  .stats { display: none; }
+
+  .notes-list {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow-y: visible;
+  }
+  .notes-list.hidden { display: none; }
+
+  .editor-panel {
+    padding: 16px;
+  }
+  .editor-panel.hidden { display: none; }
+
+  .footer {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 0.7rem;
+  }
+  .footer-home { font-size: 0.7rem; }
+}
+
+@media (max-width: 480px) {
+  .navbar { padding: 0 14px; }
+  .nav-logo { font-size: 0.95rem; }
+  .editor-actions { flex-wrap: wrap; gap: 6px; }
 }
 
 /* ── Landing Page ───────────────────────────────── */

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Settings — NotesApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    body { overflow: auto; height: auto; min-height: 100vh; }
+    .settings-main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 48px 20px 60px; gap: 20px;
+    }
+    .settings-header {
+      width: 100%; max-width: 480px;
+      display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
+    }
+    .settings-header h1 { font-size: 1.4rem; font-weight: 800; color: var(--text-1); letter-spacing: -0.02em; }
+    .settings-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 32px; width: 100%; max-width: 480px;
+    }
+    .settings-card-title {
+      font-size: 0.72rem; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 18px;
+    }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field label { font-size: 0.8rem; font-weight: 600; color: var(--text-2); }
+    .field input {
+      padding: 10px 13px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text-1); font-size: 0.9rem; font-family: inherit;
+      outline: none; transition: border 0.18s;
+    }
+    .field input:focus { border-color: var(--primary); }
+    .field-msg { font-size: 0.76rem; font-weight: 500; min-height: 16px; }
+    .field-msg.ok { color: #22c55e; }
+    .field-msg.err { color: #f87171; }
+    .pass-wrap { position: relative; }
+    .pass-wrap input { width: 100%; padding-right: 40px; }
+    .pass-wrap .eye-btn {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 2px;
+      color: var(--text-3); display: flex; align-items: center;
+    }
+    .pass-wrap .eye-btn:hover { color: var(--text-2); }
+    .pass-wrap .eye-btn svg { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="nav-logo">📝 NotesApp</a>
+    <div class="nav-links">
+      <a href="/dashboard" class="nav-link">📝 My Notes</a>
+      <a href="/profile.html" class="nav-link">👤 Profile</a>
+      <button class="nav-link nav-logout" id="logoutBtn">🚪 Logout</button>
+    </div>
+  </nav>
+
+  <main class="settings-main">
+    <div class="settings-header">
+      <a href="/profile.html" class="btn-ghost" style="padding:6px 12px;font-size:0.82rem;">← Back</a>
+      <h1>⚙️ Account Settings</h1>
+    </div>
+
+    <!-- Edit Name -->
+    <div class="settings-card">
+      <div class="settings-card-title">✏️ Edit Name</div>
+      <div class="field">
+        <label>New Name</label>
+        <input type="text" id="nameInput" placeholder="Enter new name" maxlength="60"/>
+      </div>
+      <button class="btn-primary" id="saveNameBtn">Save Name</button>
+      <div class="field-msg" id="nameMsg" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="settings-card">
+      <div class="settings-card-title">🔒 Change Password</div>
+      <div class="field">
+        <label>Current Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="currentPass" placeholder="Enter current password"/>
+          <button type="button" class="eye-btn" onclick="toggleEye('currentPass', this)"><svg id="eye-currentPass" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+        </div>
+      </div>
+      <div class="field">
+        <label>New Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="newPass" placeholder="Min 8 characters"/>
+          <button type="button" class="eye-btn" onclick="toggleEye('newPass', this)"><svg id="eye-newPass" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Confirm New Password</label>
+        <div class="pass-wrap">
+          <input type="password" id="confirmPass" placeholder="Repeat new password"/>
+          <button type="button" class="eye-btn" onclick="toggleEye('confirmPass', this)"><svg id="eye-confirmPass" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button>
+        </div>
+      </div>
+      <button class="btn-primary" id="savePassBtn">Update Password</button>
+      <div class="field-msg" id="passMsg" style="margin-top:10px;"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <span>© 2026 NotesApp — Built with Node.js, Express.js &amp; MongoDB</span>
+    <a href="/profile.html" class="footer-home">👤 Profile</a>
+  </footer>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    function setMsg(id, text, ok) {
+      const el = $(id);
+      el.textContent = text;
+      el.className = 'field-msg ' + (ok ? 'ok' : 'err');
+      if (ok) setTimeout(() => el.textContent = '', 3000);
+    }
+
+    const EYE_OPEN = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+    const EYE_CLOSED = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
+
+    function toggleEye(inputId, btn) {
+      const input = $(inputId);
+      input.type = input.type === 'password' ? 'text' : 'password';
+      btn.innerHTML = input.type === 'password' ? EYE_OPEN : EYE_CLOSED;
+    }
+
+    async function init() {
+      const res = await fetch('/api/me');
+      if (!res.ok) { window.location.replace('/login.html'); return; }
+      const user = await res.json();
+      $('nameInput').value = user.name;
+    }
+
+    $('saveNameBtn').addEventListener('click', async () => {
+      const name = $('nameInput').value.trim();
+      if (!name) return setMsg('nameMsg', 'Name cannot be empty', false);
+      const res = await fetch('/api/me/name', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (!res.ok) return setMsg('nameMsg', data.error, false);
+      setMsg('nameMsg', 'Name updated!', true);
+      setTimeout(() => window.location.replace('/profile.html'), 1500);
+    });
+
+    $('savePassBtn').addEventListener('click', async () => {
+      const currentPassword = $('currentPass').value;
+      const newPassword = $('newPass').value;
+      const confirmPassword = $('confirmPass').value;
+      if (!currentPassword || !newPassword || !confirmPassword)
+        return setMsg('passMsg', 'All fields are required', false);
+      if (newPassword.length < 8)
+        return setMsg('passMsg', 'New password must be at least 8 characters', false);
+      if (newPassword !== confirmPassword)
+        return setMsg('passMsg', 'Passwords do not match', false);
+      const res = await fetch('/api/me/password', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) return setMsg('passMsg', data.error, false);
+      $('currentPass').value = ''; $('newPass').value = ''; $('confirmPass').value = '';
+      setMsg('passMsg', 'Password updated!', true);
+      setTimeout(() => window.location.replace('/profile.html'), 1500);
+    });
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+      window.location.replace('/login.html');
+    }
+    $('logoutBtn').addEventListener('click', logout);
+
+    init();
+  </script>
+</body>
+</html>
